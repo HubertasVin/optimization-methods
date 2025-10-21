@@ -287,13 +287,11 @@ def run_optimization_comparison():
 
 
 def visualize_optimization_paths(trajectories):
-    # Pagalbinė funkcija konturų braižymui
     def plot_contours(ax, X1_grid, X2_grid, Z, levels):
         contour = ax.contour(X1_grid, X2_grid, Z, levels=levels, alpha=0.5, linewidths=0.8)
         ax.clabel(contour, inline=True, fontsize=9, fmt="%.4f")
         return contour
 
-    # Pagalbinė funkcija pagrindinių elementų braižymui
     def plot_basic_elements(ax, show_start=True):
         ax.plot(
             optimal_point[0],
@@ -311,7 +309,6 @@ def visualize_optimization_paths(trajectories):
         ax.grid(True, alpha=0.3)
         ax.legend(loc="upper right", fontsize=10)
 
-    # Pagalbinė funkcija trajektorijos braižymui
     def plot_trajectory(ax, traj, color, marker_size=4):
         traj_array = np.array(traj)
         ax.plot(
@@ -328,20 +325,35 @@ def visualize_optimization_paths(trajectories):
             "o",
             color=color,
             markersize=marker_size,
-            markeredgecolor=f"dark{color}",
-            markeredgewidth=0.5,
+            markeredgecolor="black",
+            markeredgewidth=1.5,
         )
         ax.plot(
             traj_array[-1, 0],
             traj_array[-1, 1],
             "o",
             color=color,
-            markersize=10,
+            markersize=12,
             markeredgecolor="black",
             markeredgewidth=1.5,
         )
 
-    # Sukuriame tinklelį funkcijos vizualizacijai
+    def plot_simplex_vertices(ax, simplex, idx, total_simplexes):
+        vertex_alpha = 0.4 + 0.6 * (idx / total_simplexes)
+
+        for vertex in simplex:
+            ax.plot(vertex[0], vertex[1], "o", color="red", markersize=4, alpha=vertex_alpha, zorder=5)
+            ax.plot(
+                vertex[0],
+                vertex[1],
+                "o",
+                markerfacecolor="none",
+                markeredgecolor="black",
+                markersize=4,
+                markeredgewidth=1.2,
+                zorder=6,
+            )
+
     x1_edges, x2_edges = [-0.2, 1.1], [-0.2, 1.1]
     x1_range = np.linspace(x1_edges[0], x1_edges[1], 100)
     x2_range = np.linspace(x2_edges[0], x2_edges[1], 100)
@@ -350,7 +362,6 @@ def visualize_optimization_paths(trajectories):
     Z = np.array([[f([X1_grid[j, i], X2_grid[j, i]]) for i in range(len(x1_range))] for j in range(len(x2_range))])
     levels = np.linspace(np.nanmin(Z), np.nanmax(Z), 70)
 
-    # Sukuriame 2x2 grafikų tinklelį
     fig, axes = plt.subplots(2, 2, figsize=(16, 14))
     fig.suptitle("Optimizavimo algoritmų palyginimas (pradinis taškas Xm)", fontsize=18, fontweight="bold")
 
@@ -365,7 +376,6 @@ def visualize_optimization_paths(trajectories):
     for title, alg_name, (row, col) in configs:
         ax = axes[row, col]
 
-        # Simpleksui naudojame atitolinką vaizdą
         if alg_name == "Deformuojamo simplekso algoritmas":
             x1_s, x2_s = [-0.5, 1.2], [-0.5, 1.7]
             X1_s, X2_s = np.meshgrid(np.linspace(x1_s[0], x1_s[1], 100), np.linspace(x2_s[0], x2_s[1], 100))
@@ -378,8 +388,7 @@ def visualize_optimization_paths(trajectories):
             ax.set_xlim(x1_edges)
             ax.set_ylim(x2_edges)
 
-        # Braižome pagrindinius elementus
-        if alg_name is None:  # Bendras vaizdas
+        if alg_name is None:
             plot_basic_elements(ax, show_start=False)
             colors = ["cyan", "magenta", "yellow"]
             for i, (name, point) in enumerate(test_points):
@@ -400,24 +409,30 @@ def visualize_optimization_paths(trajectories):
             if traj and alg_name != "Deformuojamo simplekso algoritmas":
                 color = "blue" if "Gradientinis" in alg_name else "green"
                 plot_trajectory(ax, traj, color)
-            elif traj:  # Simpleksas
+            elif traj:
+                total_simplexes = len(traj)
+
                 for idx, simplex in enumerate(traj):
                     if len(simplex) >= 3:
                         triangle = np.array(simplex + [simplex[0]])
-                        alpha_val = 0.3 + 0.5 * (idx / len(traj))
-                        ax.plot(triangle[:, 0], triangle[:, 1], color="red", alpha=alpha_val, linewidth=2)
-                        ax.fill(triangle[:, 0], triangle[:, 1], color="red", alpha=0.03)
+                        alpha_val = 0.3 + 0.5 * (idx / total_simplexes)
+                        ax.plot(triangle[:, 0], triangle[:, 1], color="red", alpha=alpha_val, linewidth=2.5, zorder=3)
+                        ax.fill(triangle[:, 0], triangle[:, 1], color="red", alpha=0.03, zorder=2)
+
+                        plot_simplex_vertices(ax, simplex, idx, total_simplexes)
 
                 if traj and traj[-1]:
+                    final = traj[-1][0]
                     ax.plot(
-                        traj[-1][0][0],
-                        traj[-1][0][1],
+                        final[0],
+                        final[1],
                         "o",
                         color="red",
-                        markersize=10,
+                        markersize=12,
                         label=f"Simpleksų sk.: {len(traj)}",
                         markeredgecolor="black",
                         markeredgewidth=1.5,
+                        zorder=8,
                     )
 
         ax.set_xlabel("X₁", fontsize=12)
