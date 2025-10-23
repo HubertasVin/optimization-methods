@@ -57,7 +57,7 @@ def gradient_descent(start_point, point_name="", max_iter=1000, tolerance=1e-6):
         grad = gradient_f(X)
         grad_norm = np.linalg.norm(grad)
 
-        print(f"[{point_name}] Epocha {i}: ||∇f|| = {grad_norm:.6f}")
+        print(f"[{point_name}] Iteracija {i}: ||∇f|| = {grad_norm:.10f}")
 
         if grad_norm < tolerance:
             return X, i + 1, trajectory
@@ -112,7 +112,7 @@ def steepest_descent(start_point, point_name="", max_iter=1000, tolerance=1e-6):
 
         step_size = golden_section_search(X, grad)
 
-        print(f"[{point_name}] Epocha {i}: λ = {step_size:.6f}, ||∇f|| = {grad_norm:.6f}")
+        print(f"[{point_name}] Iteracija {i}: λ = {step_size:.10f}, ||∇f|| = {grad_norm:.10f}")
 
         X = X - step_size * grad
         trajectory.append(np.copy(X))
