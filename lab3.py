@@ -9,7 +9,7 @@ e = 0.0001
 maxit = 20  # Maksimalus išorinių iteracijų skaičius
 
 # Studento knygelės numeris: 2*1*abc
-a, b, c = 1, 7, 0
+a, b, c = 8, 1, 7
 
 points = [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (a / 10, b / 10, c / 10 if c != 0 else 0.1)]
 
