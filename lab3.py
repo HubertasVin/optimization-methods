@@ -41,8 +41,8 @@ def simplex_method(objective_function, X0, r):
     beta = 0.5
     gamma = 2.0
     niu = -0.5
-    tolerance = 1e-5  # Sumažintas iš 1e-6
-    max_iter = 200  # Sumažintas iš 500
+    tolerance = 1e-5
+    max_iter = 200
 
     def f_penalty(X):
         return objective_function(X, r)
