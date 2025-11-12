@@ -13,12 +13,22 @@ a, b, c = 8, 1, 7
 
 points = [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (a / 10, b / 10, c / 10 if c != 0 else 0.1)]
 
-# Skirtingos r konfigūracijos testavimui
+
+def next_r_law2(starting_r, iteration):
+    return starting_r * (1 / pow(5, iteration))
+
+
+def next_r_law1(starting_r, iteration):
+    return starting_r * pow(0.5, iteration)
+
+
+# Skirtingos r konfigūracijos
 r_configs = [
-    {"r_start": 10, "r_mult": 0.5, "name": "A (r=10, n=0.5)"},
-    {"r_start": 5, "r_mult": 0.3, "name": "B (r=5, n=0.3)"},
-    {"r_start": 2, "r_mult": 0.1, "name": "C (r=2, n=0.1)"},
+    {"r_start": 10, "r_mut_func": next_r_law1, "name": "A (r=10, f_mut(r)=r/2)"},
+    {"r_start": 10, "r_mut_func": next_r_law2, "name": "B (r=10, f_mut(r)=1 * 1/5^i)"},
+    {"r_start": 10, "r_mut_func": next_r_law2, "name": "C (r=10, f_mut(r)=1 * 1/5^i)"},
 ]
+
 
 # ============================================================================
 # PAGALBINĖS FUNKCIJOS
@@ -143,46 +153,24 @@ def objective_function(X, r=2):
     return f(X) + (1 / r) * penalty_function(X)
 
 
-def minimize(X0, e, maxit, r, r_multiplier):
+def minimize(X0, e, maxit, r_start, r_mut_func):
     """Minimizuoja su baudos funkcija"""
+    r = r_start
+    print("Iteracija ", 0, " with r=", r, ": ", X0)
     XN = simplex_method(objective_function, X0, r)
     count = XN[2]
     it = 1
 
     while distance_beetween_vectors(XN[0], X0) > e and it <= maxit:
-        r *= r_multiplier
+        r = r_mut_func(r_start, it)
         X0 = XN[0]
         XN = simplex_method(objective_function, X0, r)
+        print("Iteracija ", it, " with r=", r, ": ", XN[0])
         count += XN[2]
         it += 1
 
     return XN[0], XN[1], it, count
 
-
-# ============================================================================
-# BAUDOS DAUGIKLIO ĮTAKOS TYRIMAS
-# ============================================================================
-
-print("BAUDOS DAUGIKLIO r ĮTAKOS TYRIMAS")
-print("-" * 80)
-
-test_point = np.array([0.5, 0.5, 0.5])
-r_test = [10, 5, 1, 0.5, 0.1, 0.01]
-
-print(f"Testuojamas taškas: X = ({test_point[0]:.2f}, {test_point[1]:.2f}, {test_point[2]:.2f})")
-print(f"g(X) = {g(test_point):.6f} (pažeistas!)\n")
-
-tab_penalty = PrettyTable(["r", "f(X)", "Baudos narys", "B(X,r)"])
-tab_penalty.align = "r"
-
-for r in r_test:
-    B_val = objective_function(test_point, r)
-    f_val = f(test_point)
-    penalty = B_val - f_val
-
-    tab_penalty.add_row([f"{r:.2f}", f"{f_val:.6f}", f"{penalty:.6f}", f"{B_val:.6f}"])
-
-print(tab_penalty)
 
 # ============================================================================
 # OPTIMIZAVIMAS SU KELIOMIS r KONFIGŪRACIJOMIS
@@ -196,7 +184,7 @@ all_results = []
 
 for config in r_configs:
     r_start = config["r_start"]
-    r_mult = config["r_mult"]
+    r_mut_func = config["r_mut_func"]
     config_name = config["name"]
 
     print(f"\nKONFIGŪRACIJA: {config_name}")
@@ -211,7 +199,7 @@ for config in r_configs:
     for i, point in enumerate(points):
         point_name = ["X₀=(0,0,0)", "X₁=(1,1,1)", f"Xₘ=({a/10},{b/10},{c/10 if c!=0 else 0.1})"][i]
 
-        X_opt, f_min, outer_iter, total_iter = minimize(np.array(point), e, maxit, r_start, r_mult)
+        X_opt, f_min, outer_iter, total_iter = minimize(np.array(point), e, maxit, r_start, r_mut_func)
 
         V_opt = -f_min
         g_opt = g(X_opt)
