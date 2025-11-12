@@ -5,28 +5,31 @@ from prettytable import PrettyTable
 # ============================================================================
 # PARAMETRAI
 # ============================================================================
-e = 0.0001
+e = 0.001  # Konvergavimo parametras
 maxit = 20  # Maksimalus išorinių iteracijų skaičius
+a, b, c = 8, 1, 7  # Studento knygelės numeris: 2*1*abc
 
-# Studento knygelės numeris: 2*1*abc
-a, b, c = 8, 1, 7
-
-points = [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (a / 10, b / 10, c / 10 if c != 0 else 0.1)]
-
-
-def next_r_law2(starting_r, iteration):
-    return starting_r * (1 / pow(5, iteration))
+starting_points = [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (a / 10, b / 10, c / 10 if c != 0 else 0.1)]
+starting_point_names = ["X₀=(0,0,0)", "X₁=(1,1,1)", f"Xₘ=({a / 10},{b / 10},{c / 10})"]
 
 
 def next_r_law1(starting_r, iteration):
     return starting_r * pow(0.5, iteration)
 
 
+def next_r_law2(starting_r, iteration):
+    return starting_r * pow(0.05, iteration)
+
+
+def next_r_law3(starting_r, iteration):
+    return starting_r * (1 / pow(5, iteration))
+
+
 # Skirtingos r konfigūracijos
 r_configs = [
     {"r_start": 10, "r_mut_func": next_r_law1, "name": "A (r=10, f_mut(r)=r/2)"},
-    {"r_start": 10, "r_mut_func": next_r_law2, "name": "B (r=10, f_mut(r)=1 * 1/5^i)"},
-    {"r_start": 10, "r_mut_func": next_r_law2, "name": "C (r=10, f_mut(r)=1 * 1/5^i)"},
+    {"r_start": 10, "r_mut_func": next_r_law2, "name": "B (r=10, f_mut(r)=r/20)"},
+    {"r_start": 10, "r_mut_func": next_r_law3, "name": "C (r=10, f_mut(r)=1 * 1/5^i)"},
 ]
 
 
@@ -155,19 +158,28 @@ def objective_function(X, r=2):
 
 def minimize(X0, e, maxit, r_start, r_mut_func):
     """Minimizuoja su baudos funkcija"""
-    r = r_start
-    print("Iteracija ", 0, " with r=", r, ": ", X0)
-    XN = simplex_method(objective_function, X0, r)
+    V0 = -f(X0)
+
+    tab_iterations = PrettyTable(["Iteracija", "X dabartinis", "r reikšmė", "Tūris V"])
+    tab_iterations.align["r reikšmė"] = "r"
+    tab_iterations.align["Tūris V"] = "r"
+    tab_iterations.add_row([0, f"({X0[0]:.10g}, {X0[1]:.10g}, {X0[2]:.10g})", "-", f"{V0:.8g}"])
+    XN = simplex_method(objective_function, X0, r_start)
+    VN = -f(XN[0])
     count = XN[2]
     it = 1
+    tab_iterations.add_row([it, f"({XN[0][0]:.10g}, {XN[0][1]:.10g}, {XN[0][2]:.10g})", f"{r_start:g}", f"{VN:.12g}"])
 
     while distance_beetween_vectors(XN[0], X0) > e and it <= maxit:
         r = r_mut_func(r_start, it)
         X0 = XN[0]
         XN = simplex_method(objective_function, X0, r)
-        print("Iteracija ", it, " with r=", r, ": ", XN[0])
+        VN = -f(XN[0])
         count += XN[2]
         it += 1
+        tab_iterations.add_row([it, f"({XN[0][0]:.10g}, {XN[0][1]:.10g}, {XN[0][2]:.10g})", f"{r:g}", f"{VN:.12g}"])
+
+    print(tab_iterations)
 
     return XN[0], XN[1], it, count
 
@@ -190,15 +202,13 @@ for config in r_configs:
     print(f"\nKONFIGŪRACIJA: {config_name}")
     print("-" * 100)
 
-    tab_results = PrettyTable(["Pradinis taškas", "Sprendinys X*", "Tūris V", "|g(X*)|", "Iteracijos"])
+    tab_results = PrettyTable(
+        ["Pradinis taškas", "Sprendinys X*", "Tūris V", "Iteracijų sk.", "Nelder-Mead funkcijos iteracijų skaičius"]
+    )
     tab_results.align["Sprendinys X*"] = "l"
     tab_results.align["Tūris V"] = "r"
 
-    config_results = []
-
-    for i, point in enumerate(points):
-        point_name = ["X₀=(0,0,0)", "X₁=(1,1,1)", f"Xₘ=({a/10},{b/10},{c/10 if c!=0 else 0.1})"][i]
-
+    for i, point in enumerate(starting_points):
         X_opt, f_min, outer_iter, total_iter = minimize(np.array(point), e, maxit, r_start, r_mut_func)
 
         V_opt = -f_min
@@ -206,17 +216,16 @@ for config in r_configs:
 
         tab_results.add_row(
             [
-                point_name,
-                f"({X_opt[0]:.6f}, {X_opt[1]:.6f}, {X_opt[2]:.6f})",
-                f"{V_opt:.8f}",
-                f"{abs(g_opt):.2e}",
+                starting_point_names[i],
+                f"({X_opt[0]:.10g}, {X_opt[1]:.10g}, {X_opt[2]:.10g})",
+                f"{V_opt:.12f}",
+                outer_iter,
                 total_iter,
             ]
         )
 
-        config_results.append(
-            {"config": config_name, "point": point_name, "X": X_opt, "V": V_opt, "g": g_opt, "iter": total_iter}
-        )
+        if i < len(starting_points) - 1:
+            print()
 
+    print("\nGalutiniai rezultatai pagal pradinius taškus:")
     print(tab_results)
-    all_results.extend(config_results)
