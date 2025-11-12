@@ -183,7 +183,6 @@ for r in r_test:
     tab_penalty.add_row([f"{r:.2f}", f"{f_val:.6f}", f"{penalty:.6f}", f"{B_val:.6f}"])
 
 print(tab_penalty)
-print("\nMažėjant r → baudos narys didėja → apribojimai griežčiau verčiami\n")
 
 # ============================================================================
 # OPTIMIZAVIMAS SU KELIOMIS r KONFIGŪRACIJOMIS
